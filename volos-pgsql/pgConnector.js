@@ -44,6 +44,30 @@ var PgConnector = function (options) {
         return(dfd.promise);
     }
 
+    this.localQuery = function(queryString){
+
+        var dfd = Q.defer();
+        this.connect().then(function(connectResult){
+            var client = connectResult.client;
+
+            var query = client.query(queryString);
+            var rows = [];
+            query.on('row', function(row){
+                rows.push(row);
+            });
+
+            query.on('end', function(){
+                dfd.resolve(rows);
+            });
+
+            query.on('error', function(err){
+                dfd.reject(new Error(err));
+            });
+        });
+        return dfd.promise;
+
+    };
+
     this.doQuery = function(connectResult, queryString) {
         var dfd = Q.defer();
 

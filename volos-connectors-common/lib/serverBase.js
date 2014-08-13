@@ -226,7 +226,11 @@ ServerBase.prototype.parseUrl = function (req) {
     if (!req._parsedUrl) {
         req._parsedUrl = parsedUrl;
     }
-    req.query = parsedUrl.query;
+    if(!req.query)
+      req.query = {};
+
+    _.extend(req.query,parsedUrl.query);
+
     if (!req.params) {
         req.params = {};
     }
@@ -312,6 +316,9 @@ ServerBase.prototype.registerPathsExpress = function (app, queryToRestMap) {
         app.get('/' + key + '/:id', function (key, req, resp) {
             self.dispatchRequestExpress(key, queryToRestMap, req, resp);
         }.bind(null, key));
+
+        //Handle Update if table is set in the queryToRestMap
+        //if()
 
     }
     app.get('/', function (req, resp) {
