@@ -239,6 +239,10 @@ ServerBase.prototype.parseUrl = function (req) {
     if (results) {
         req._parsedUrl.key = results.regExpForRestMapItem.key;
 
+        if (!req.params) {
+            req.params = {};
+        }
+
         var pathParts = results.regExpForRestMapItem.pathParts;
         req._ids = [];
         var valueIndex = 1;
@@ -303,24 +307,47 @@ ServerBase.prototype.validateFormVars = function (req, resp, expectedFormVars, a
 }
 
 ServerBase.prototype.registerPathsExpress = function (app, queryToRestMap) {
+    this.restMap = queryToRestMap;
     var self = this;
     for (var key in queryToRestMap) {
         //
         // partially apply the request handler to carry the key parameter with it,
         // allowing it to serve all path registrations
-        app.get('/' + key, function (key, req, resp) {
-            req._parsedUrl.key = key;
-            self.dispatchRequestExpress(key, queryToRestMap, req, resp);
-        }.bind(null, key));
-
-        app.get('/' + key + '/:id', function (key, req, resp) {
-            self.dispatchRequestExpress(key, queryToRestMap, req, resp);
-        }.bind(null, key));
+        var entry = queryToRestMap[key];
+        var restSemantic = entry.restSemantic ? entry.restSemantic : 'GET';
+        var path = entry.path ? entry.path : '/' + key;
+        var method = null;
+        switch(restSemantic) {
+            case 'GET':
+                method = eval('app.get');
+                break;
+            case 'POST':
+                method = eval('app.post');
+                break;
+            case 'PUT':
+                method = eval('app.put');
+                break;
+            case 'DELETE':
+                method = eval('app.delete');
+                break;
+        }
 
         //Handle Update if table is set in the queryToRestMap
         //if()
 
+        if (method === null) {
+            // TODO - don't be silent!
+        } else {
+            method.call(app, path, function (key, req, resp) {
+                req._parsedUrl.key = key;
+                self.dispatchRequestExpress(key, queryToRestMap, req, resp);
+            }.bind(null, key));
+            method.call(app, path + '/:id', function (key, req, resp) {
+                self.dispatchRequestExpress(key, queryToRestMap, req, resp);
+            }.bind(null, key));
+        }
     }
+
     app.get('/', function (req, resp) {
         resp.send(JSON.stringify(self.getHelp(queryToRestMap), undefined, '\t'));
     });
@@ -481,26 +508,36 @@ ServerBase.prototype.prepareRequest = function (req, resp) {
             case 'POST':
             case 'PUT':
                 found = true;
-                var self = this;
-                var body = '';
-                req.on('data', function (data) {
-                    body += data;
-                });
-                req.on('end', function () {
-                    stuff.postedBody = body;
-                    var ok = self.doParseBody ? self.parseBody(req, body) : true;
-                    if (ok) {
-                        try {
-                            var method = eval('self.' + req._parsedUrl.key);
-                            stuff.executeMethod = method ? method : this.unknownPath;
-                        } catch (e) {
-                            stuff.executeMethod = this.unknownPath;
-                        }
-                        dfd.resolve(stuff);
-                    } else {
-                        dfd.reject({errorCode: 415, errorMessage: "Unsupported Media Type"});
+                if (req.body) { // already retrieved by Express ?
+                    try {
+                        var method = eval('this.' + req._parsedUrl.key);
+                        stuff.executeMethod = method ? method : this.unknownPath;
+                    } catch (e) {
+                        stuff.executeMethod = this.unknownPath;
                     }
-                });
+                    dfd.resolve(stuff);
+                } else {
+                    var self = this;
+                    var body = '';
+                    req.on('data', function (data) {
+                        body += data;
+                    });
+                    req.on('end', function () {
+                        stuff.postedBody = body;
+                        var ok = self.doParseBody ? self.parseBody(req, body) : true;
+                        if (ok) {
+                            try {
+                                var method = eval('self.' + req._parsedUrl.key);
+                                stuff.executeMethod = method ? method : this.unknownPath;
+                            } catch (e) {
+                                stuff.executeMethod = this.unknownPath;
+                            }
+                            dfd.resolve(stuff);
+                        } else {
+                            dfd.reject({errorCode: 415, errorMessage: "Unsupported Media Type"});
+                        }
+                    });
+                 }
 
                 break;
             case 'DELETE':
