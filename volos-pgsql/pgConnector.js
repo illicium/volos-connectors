@@ -50,7 +50,11 @@ var PgConnector = function (options) {
 
         return this.connect().then(function(connectResult){
             args.unshift(connectResult);
-            return self.doQuery.apply(self, args);
+            return self.doQuery.apply(self, args)
+              .then(function(queryResult) {
+                connectResult.done();
+                return queryResult;
+              });
         });
     };
 
