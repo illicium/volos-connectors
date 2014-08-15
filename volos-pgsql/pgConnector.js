@@ -44,43 +44,36 @@ var PgConnector = function (options) {
         return(dfd.promise);
     }
 
-    this.localQuery = function(queryString){
+    this.localQuery = function(/* queryArgs */){
+        var args = Array.prototype.slice.call(arguments);
+        var self = this;
 
-        var dfd = Q.defer();
-        this.connect().then(function(connectResult){
-            var client = connectResult.client;
-
-            var query = client.query(queryString);
-            var rows = [];
-            query.on('row', function(row){
-                rows.push(row);
-            });
-
-            query.on('end', function(){
-                dfd.resolve(rows);
-            });
-
-            query.on('error', function(err){
-                dfd.reject(new Error(err));
-            });
+        return this.connect().then(function(connectResult){
+            args.unshift(connectResult);
+            return self.doQuery.apply(self, args);
         });
-        return dfd.promise;
-
     };
 
-    this.doQuery = function(connectResult, queryString) {
-        var dfd = Q.defer();
+    this.doQuery = function(connectResult /*, queryArgs... */) {
+        var queryArgs = Array.prototype.slice.call(arguments);
+        queryArgs.shift();
 
+        var dfd = Q.defer();
         var client = connectResult.client;
 
-        var query = client.query(queryString);
+        var query = client.query.apply(client, queryArgs);
         var rows = [];
+
         query.on('row', function (row) {
             rows.push(row);
         });
+
         query.on('end', function () {
             dfd.resolve(rows);
-            //client.end.bind(client);
+        });
+
+        query.on('error', function(err){
+            dfd.reject(new Error(err));
         });
 
         return dfd.promise;
