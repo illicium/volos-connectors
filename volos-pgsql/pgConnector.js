@@ -1,3 +1,4 @@
+var debug = require('debug')('volos-pgsql');
 var pg = require('pg');
 var http = require('http');
 var Q = require('q');
@@ -194,6 +195,7 @@ var PgConnector = function (options) {
             });
 
         } catch (e) {
+            debug(e);
             throw e;
         }
 
