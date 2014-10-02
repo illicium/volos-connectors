@@ -171,6 +171,19 @@ SqlServerBase.prototype.addWhereClause = function(req, queryInfo, queryString)
       }
     }
 
+    if (queryInfo.securityParameters) {
+      for (var key in queryInfo.securityParameters) {
+          var whereFragment = queryInfo.securityParameters[key];
+          if (whereFragment) {
+              var templatedWhereFragment;
+              if(nonstockQueryParameters[key] !== '*'){
+                templatedWhereFragment = whereFragment.replace('{' + key + '}', nonstockQueryParameters[key]);
+                queryString = this.addWhere(queryString, templatedWhereFragment);
+              }
+          }
+      }
+    }
+  
     if (queryInfo.queryParameters) {
       for (var key in nonstockQueryParameters) {
           var whereFragment = queryInfo.queryParameters[key];

@@ -226,6 +226,14 @@ ServerBase.prototype.parseUrl = function (req) {
     if (!req._parsedUrl) {
         req._parsedUrl = parsedUrl;
     }
+    if(!req.query)
+      req.query = {};
+
+    _.extend(req.query,parsedUrl.query);
+
+    if (!req.params) {
+        req.params = {};
+    }
 
     var results = this.findPath(req.url, req.method);
     if (results) {
@@ -309,9 +317,28 @@ ServerBase.prototype.registerPathsExpress = function (app, queryToRestMap) {
             self.dispatchRequestExpress(key, queryToRestMap, req, resp);
         }.bind(null, key));
 
+//<<<<<<< HEAD
         app.get('/' + key + '/:id', function (key, req, resp) {
             self.dispatchRequestExpress(key, queryToRestMap, req, resp);
         }.bind(null, key));
+
+// =======
+//         //Handle Update if table is set in the queryToRestMap
+//         //if()
+
+//         if (method === null) {
+//             // TODO - don't be silent!
+//         } else {
+//             method.call(app, path, function (key, req, resp) {
+//                 req._parsedUrl.key = key;
+//                 self.dispatchRequestExpress(key, queryToRestMap, req, resp);
+//             }.bind(null, key));
+//             method.call(app, path + '/:id', function (key, req, resp) {
+//                 self.dispatchRequestExpress(key, queryToRestMap, req, resp);
+//             }.bind(null, key));
+//         }
+//     }
+// >>>>>>> btallman
 
     }
     app.get('/', function (req, resp) {
