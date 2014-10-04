@@ -78,6 +78,7 @@ var PgConnector = function (options) {
         });
 
         query.on('error', function(err){
+            debug(err);
             dfd.reject(new Error(err));
         });
 

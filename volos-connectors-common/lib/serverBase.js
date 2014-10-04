@@ -2,6 +2,7 @@ var http = require('http');
 var Q = require('q');
 var url = require('url');
 var _ = require('lodash');
+var debug = require('debug')('volos-connector-common');
 
 var ServerBase = function () {
     this.init = false;
@@ -313,12 +314,22 @@ ServerBase.prototype.registerPathsExpress = function (app, queryToRestMap) {
         // partially apply the request handler to carry the key parameter with it,
         // allowing it to serve all path registrations
         app.get('/' + key, function (key, req, resp) {
-            req._parsedUrl.key = key;
-            self.dispatchRequestExpress(key, queryToRestMap, req, resp);
+            try{
+                req._parsedUrl.key = key;
+                self.dispatchRequestExpress(key, queryToRestMap, req, resp);
+            }catch(ex){
+                debug(ex);
+                resp.sendStatus(500);
+            }
         }.bind(null, key));
 
         app.get('/' + key + '/:id', function (key, req, resp) {
-            self.dispatchRequestExpress(key, queryToRestMap, req, resp);
+            try{
+                self.dispatchRequestExpress(key, queryToRestMap, req, resp);
+            }catch(ex){
+                debug(ex);
+                resp.sendStatus(500);
+            }
         }.bind(null, key));
 
     }

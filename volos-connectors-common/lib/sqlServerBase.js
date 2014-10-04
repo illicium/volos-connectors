@@ -1,6 +1,7 @@
 var serverBase = require('./serverBase');
 var Q = require('q');
 var _ = require('lodash');
+var debug = require('debug')('sql');
 
 var SqlServerBase = function() {
     this.defaults = _.merge(this.defaults, {expand: false, limit: 100});
@@ -53,7 +54,7 @@ SqlServerBase.prototype.buildSelect = function(req, resp, setupResult) {
     }
     queryString += " LIMIT " + limit;
 
-    console.log("SQL Query:", queryString);
+    debug("SQL Query: " + queryString);
     return(queryString);
 }
 
@@ -183,7 +184,7 @@ SqlServerBase.prototype.addWhereClause = function(req, queryInfo, queryString)
           }
       }
     }
-  
+
     if (queryInfo.queryParameters) {
       for (var key in nonstockQueryParameters) {
           var whereFragment = queryInfo.queryParameters[key];
